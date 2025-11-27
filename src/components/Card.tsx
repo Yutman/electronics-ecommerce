@@ -114,8 +114,8 @@ export default function Card({
       <div
         className={`
           relative bg-light-200 overflow-hidden
-          ${variant === "compact" ? "w-24 h-24 flex-shrink-0" : "aspect-square w-full"}
-          ${variant === "featured" ? "aspect-[4/3]" : ""}
+          ${variant === "compact" ? "w-24 h-24 shrink-0" : "aspect-square w-full"}
+          ${variant === "featured" ? "aspect-4/3" : ""}
         `}
       >
         <Image

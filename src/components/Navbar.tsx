@@ -5,23 +5,18 @@ import Image from "next/image";
 import Link from "next/link";
 
 const topLinks = [
-  { label: "The Back Market Promise", href: "#" },
   { label: "Repair & Care", href: "#" },
-  { label: "End fast tech", href: "#" },
   { label: "Tech Journal", href: "#" },
 ];
 
 const categories = [
-  { label: "Gift guide", href: "#", icon: true },
-  { label: "Black Friday", href: "#" },
-  { label: "Smartphones", href: "#" },
   { label: "Laptops", href: "#" },
-  { label: "Tablets", href: "#" },
-  { label: "Gaming consoles", href: "#" },
+  { label: "Computer Accessories", href: "#" },
+  { label: "Smartphones", href: "#" },
+  { label: "Phone Accessories", href: "#" },
+  { label: "Desktops", href: "#" },
   { label: "Smartwatches", href: "#" },
   { label: "Audio", href: "#" },
-  { label: "Home appliances", href: "#" },
-  { label: "More", href: "#" },
 ];
 
 export default function Navbar() {
@@ -33,25 +28,11 @@ export default function Navbar() {
       {/* Top Bar */}
       <div className="hidden md:block border-b border-light-300">
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-          <nav className="flex items-center gap-6" aria-label="Secondary navigation">
+          <nav
+            className="flex items-center gap-6"
+            aria-label="Secondary navigation"
+          >
             <div className="flex items-center gap-1 text-caption text-dark-900">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
-              </svg>
-              <Link href="#" className="hover:underline">
-                The Back Market Promise
-              </Link>
             </div>
             {topLinks.slice(1).map((link) => (
               <Link
@@ -72,7 +53,7 @@ export default function Navbar() {
               className="rounded-sm"
               aria-hidden="true"
             />
-            <span>US</span>
+            <span>KE</span>
           </div>
         </div>
       </div>
@@ -121,7 +102,7 @@ export default function Navbar() {
           </button>
 
           {/* Logo */}
-          <Link href="/" className="flex-shrink-0" aria-label="A2Z Electronics Home">
+          <Link href="/" className="shrink-0" aria-label="A2Z Electronics Home">
             <div className="flex items-center gap-1">
               <div className="bg-dark-900 p-1 rounded">
                 <Image
@@ -176,7 +157,7 @@ export default function Navbar() {
           {/* Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Trade-in Button */}
-            <Link
+            {/* <Link
               href="#"
               className="hidden lg:flex items-center gap-2 px-4 py-2 border border-light-400 rounded-full text-body-medium text-dark-900 hover:bg-light-200 transition-colors"
             >
@@ -194,7 +175,7 @@ export default function Navbar() {
                 <path d="M16 3h5v5M8 3H3v5M3 16v5h5M21 16v5h-5M7 12h10M12 7v10" />
               </svg>
               <span>Trade-in</span>
-            </Link>
+            </Link> */}
 
             {/* Need Help */}
             <Link
