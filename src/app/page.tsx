@@ -2,6 +2,7 @@ import React from "react";
 import Navbar from "@/components/Navbar";
 import Card from "@/components/Card";
 import Footer from "@/components/Footer";
+import CategoryGrid from "@/components/CategoryGrid";
 
 const sampleProducts = [
   {
@@ -56,7 +57,7 @@ const Home = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-1 bg-light-200">
+      {/* <main className="flex-1 bg-light-200">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <h1 className="text-heading-2 text-dark-900 mb-8">
             Featured Products
@@ -81,7 +82,9 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </main>
+      </main> */}
+
+      <CategoryGrid />
 
       <Footer />
     </div>
