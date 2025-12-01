@@ -9,7 +9,7 @@ const topLinks = [
   { label: "Tech Journal", href: "#" },
 ];
 
-const categories = [
+const categories: { label: string; href: string; icon?: boolean }[] = [
   { label: "Laptops", href: "#" },
   { label: "Computer Accessories", href: "#" },
   { label: "Smartphones", href: "#" },
@@ -32,8 +32,7 @@ export default function Navbar() {
             className="flex items-center gap-6"
             aria-label="Secondary navigation"
           >
-            <div className="flex items-center gap-1 text-caption text-dark-900">
-            </div>
+            <div className="flex items-center gap-1 text-caption text-dark-900"></div>
             {topLinks.slice(1).map((link) => (
               <Link
                 key={link.label}
