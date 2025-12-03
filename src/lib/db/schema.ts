@@ -15,3 +15,5 @@ export const products = pgTable('products', {
 
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
+
+export * from './schema/index';
