@@ -27,7 +27,7 @@ export async function signUp(formData: FormData): Promise<ActionResult<{ userId:
     if (!validationResult.success) {
       return {
         success: false,
-        error: validationResult.error.errors[0]?.message || "Invalid input",
+        error: validationResult.error.issues[0]?.message || "Invalid input",
       };
     }
 
@@ -71,7 +71,7 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
     if (!validationResult.success) {
       return {
         success: false,
-        error: validationResult.error.errors[0]?.message || "Invalid input",
+        error: validationResult.error.issues[0]?.message || "Invalid input",
       };
     }
 
