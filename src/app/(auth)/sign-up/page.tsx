@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AuthForm from "@/components/AuthForm";
 import SocialProviders from "@/components/SocialProviders";
+import { signUp } from "@/lib/auth/actions";
 
 const signUpFields = [
   {
@@ -69,6 +70,8 @@ export default function SignUpPage() {
       <AuthForm
         fields={signUpFields}
         submitLabel="Sign Up"
+        action={signUp}
+        redirectTo="/"
         termsText={
           <>
             By signing up, you agree to our{" "}

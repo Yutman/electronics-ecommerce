@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 interface AuthFormField {
   name: string;
@@ -10,37 +11,67 @@ interface AuthFormField {
   autoComplete?: string;
 }
 
+type ActionResult = 
+  | { success: true; data?: unknown }
+  | { success: false; error: string };
+
 interface AuthFormProps {
   fields: AuthFormField[];
   submitLabel: string;
-  onSubmit?: (data: Record<string, string>) => void;
+  action: (formData: FormData) => Promise<ActionResult>;
+  redirectTo?: string;
   termsText?: React.ReactNode;
 }
 
 export default function AuthForm({
   fields,
   submitLabel,
-  onSubmit,
+  action,
+  redirectTo = "/",
   termsText,
 }: AuthFormProps) {
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
-
-  const handleChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
 
   const togglePasswordVisibility = (name: string) => {
     setShowPassword((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit?.(formData);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+
+    startTransition(async () => {
+      try {
+        const result = await action(formData);
+        
+        if (result.success) {
+          // Small delay to ensure state updates, then redirect
+          setTimeout(() => {
+            window.location.href = redirectTo;
+          }, 100);
+        } else {
+          setError(result.error);
+        }
+      } catch (err) {
+        console.error("Form submission error:", err);
+        setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      }
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
       {fields.map((field) => (
         <div key={field.name}>
           <label
@@ -62,15 +93,15 @@ export default function AuthForm({
               }
               placeholder={field.placeholder}
               autoComplete={field.autoComplete}
-              value={formData[field.name] || ""}
-              onChange={(e) => handleChange(field.name, e.target.value)}
-              className="w-full px-4 py-3 bg-light-100 border border-light-300 rounded-lg text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900 focus:border-transparent transition-all"
+              disabled={isPending}
+              className="w-full px-4 py-3 bg-light-100 border border-light-300 rounded-lg text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
             {field.type === "password" && (
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility(field.name)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-dark-500 hover:text-dark-900 transition-colors"
+                disabled={isPending}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-dark-500 hover:text-dark-900 transition-colors disabled:opacity-50"
                 aria-label={
                   showPassword[field.name] ? "Hide password" : "Show password"
                 }
@@ -114,9 +145,36 @@ export default function AuthForm({
 
       <button
         type="submit"
-        className="w-full py-3.5 bg-dark-900 text-light-100 rounded-full text-body-medium hover:bg-dark-700 transition-colors focus:outline-none focus:ring-2 focus:ring-dark-900 focus:ring-offset-2"
+        disabled={isPending}
+        className="w-full py-3.5 bg-dark-900 text-light-100 rounded-full text-body-medium hover:bg-dark-700 transition-colors focus:outline-none focus:ring-2 focus:ring-dark-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {submitLabel}
+        {isPending ? (
+          <>
+            <svg
+              className="animate-spin h-5 w-5"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Processing...
+          </>
+        ) : (
+          submitLabel
+        )}
       </button>
 
       {termsText && (
