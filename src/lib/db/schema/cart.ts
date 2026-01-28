@@ -1,9 +1,12 @@
 import { pgTable, uuid, integer, timestamp, text } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { z } from 'zod';
 import { user } from './user';
 import { guest } from './guest';
-import { products } from '../schema';
+import { productVariants } from './variants';
 
-export const cart = pgTable('cart', {
+export const carts = pgTable('carts', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
   guestId: uuid('guest_id').references(() => guest.id, { onDelete: 'cascade' }),
@@ -11,17 +14,55 @@ export const cart = pgTable('cart', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const cartItem = pgTable('cart_item', {
+export const cartItems = pgTable('cart_items', {
   id: uuid('id').primaryKey().defaultRandom(),
-  cartId: uuid('cart_id').references(() => cart.id, { onDelete: 'cascade' }).notNull(),
-  productId: integer('product_id').references(() => products.id, { onDelete: 'cascade' }).notNull(),
+  cartId: uuid('cart_id').references(() => carts.id, { onDelete: 'cascade' }).notNull(),
+  productVariantId: uuid('product_variant_id').references(() => productVariants.id, { onDelete: 'cascade' }).notNull(),
   quantity: integer('quantity').notNull().default(1),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export type Cart = typeof cart.$inferSelect;
-export type NewCart = typeof cart.$inferInsert;
-export type CartItem = typeof cartItem.$inferSelect;
-export type NewCartItem = typeof cartItem.$inferInsert;
+export const cartsRelations = relations(carts, ({ one, many }) => ({
+  user: one(user, {
+    fields: [carts.userId],
+    references: [user.id],
+  }),
+  guest: one(guest, {
+    fields: [carts.guestId],
+    references: [guest.id],
+  }),
+  items: many(cartItems),
+}));
+
+export const cartItemsRelations = relations(cartItems, ({ one }) => ({
+  cart: one(carts, {
+    fields: [cartItems.cartId],
+    references: [carts.id],
+  }),
+  productVariant: one(productVariants, {
+    fields: [cartItems.productVariantId],
+    references: [productVariants.id],
+  }),
+}));
+
+export const insertCartSchema = createInsertSchema(carts, {
+  userId: z.string().optional().nullable(),
+  guestId: z.string().uuid().optional().nullable(),
+});
+
+export const selectCartSchema = createSelectSchema(carts);
+
+export const insertCartItemSchema = createInsertSchema(cartItems, {
+  cartId: z.string().uuid(),
+  productVariantId: z.string().uuid(),
+  quantity: z.number().int().positive().optional(),
+});
+
+export const selectCartItemSchema = createSelectSchema(cartItems);
+
+export type Cart = typeof carts.$inferSelect;
+export type NewCart = typeof carts.$inferInsert;
+export type CartItem = typeof cartItems.$inferSelect;
+export type NewCartItem = typeof cartItems.$inferInsert;
 
