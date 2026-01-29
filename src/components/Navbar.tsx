@@ -10,13 +10,13 @@ const topLinks = [
 ];
 
 const categories: { label: string; href: string; icon?: boolean }[] = [
-  { label: "Laptops", href: "#" },
-  { label: "Computer Accessories", href: "#" },
-  { label: "Smartphones", href: "#" },
-  { label: "Phone Accessories", href: "#" },
-  { label: "Desktops", href: "#" },
-  { label: "Smartwatches", href: "#" },
-  { label: "Audio", href: "#" },
+  { label: "Laptops", href: "/products?category=laptops" },
+  { label: "Computer Accessories", href: "/products?category=computer-accessories" },
+  { label: "Smartphones", href: "/products?category=smartphones" },
+  { label: "Powerbanks", href: "/products?category=powerbanks" },
+  { label: "Desktops", href: "/products?category=desktops" },
+  { label: "Smartwatches", href: "/products?category=smartwatches" },
+  { label: "Audio", href: "/products?category=audio" },
 ];
 
 export default function Navbar() {
