@@ -34,9 +34,28 @@ function ensureDirectoryExists(dir: string) {
 }
 
 function copyImagesToStatic(): string[] {
+  const copiedImages: string[] = [];
+  
+  if (!fs.existsSync(SOURCE_IMAGES_DIR)) {
+    console.log(`Source images directory not found: ${SOURCE_IMAGES_DIR}`);
+    console.log('Using placeholder images instead...');
+    for (let i = 1; i <= 15; i++) {
+      copiedImages.push(`/placeholder-product.jpg`);
+    }
+    return copiedImages;
+  }
+
   ensureDirectoryExists(STATIC_UPLOADS_DIR);
   const imageFiles = fs.readdirSync(SOURCE_IMAGES_DIR).filter(f => f.endsWith('.jpg'));
-  const copiedImages: string[] = [];
+  
+  if (imageFiles.length === 0) {
+    console.log('No .jpg images found in source directory');
+    console.log('Using placeholder images instead...');
+    for (let i = 1; i <= 15; i++) {
+      copiedImages.push(`/placeholder-product.jpg`);
+    }
+    return copiedImages;
+  }
 
   for (const file of imageFiles) {
     const sourcePath = path.join(SOURCE_IMAGES_DIR, file);
@@ -696,10 +715,39 @@ async function seedProductCollections(
   }
 }
 
+async function clearExistingData() {
+  console.log('Clearing existing seed data...');
+  
+  await db.delete(productCollections);
+  await db.delete(productImages);
+  await db.delete(productVariants);
+  await db.delete(products);
+  await db.delete(collections);
+  await db.delete(categories);
+  await db.delete(series);
+  await db.delete(faceSizes);
+  await db.delete(bandTypes);
+  await db.delete(bandSizes);
+  await db.delete(simSlots);
+  await db.delete(colors);
+  await db.delete(connectivities);
+  await db.delete(storages);
+  await db.delete(screenSizes);
+  await db.delete(rams);
+  await db.delete(cpus);
+  await db.delete(conditions);
+  await db.delete(brands);
+  
+  console.log('Existing data cleared.');
+}
+
 export async function seedDatabase() {
   try {
     console.log('Starting database seed...');
     console.log('='.repeat(50));
+
+    // Clear existing data first to allow re-running the seed
+    await clearExistingData();
 
     // Copy images to static folder
     const images = copyImagesToStatic();
