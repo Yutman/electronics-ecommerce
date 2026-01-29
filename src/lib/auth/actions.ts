@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "../auth";
 import { db } from "../db";
-import { guest, cart, cartItem } from "../db/schema";
+import { guest, carts, cartItems } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import { signUpSchema, signInSchema } from "./schemas";
 
@@ -240,31 +240,31 @@ export async function mergeGuestCartWithUserCart(userId: string): Promise<Action
     // Find the guest's cart
     const guestCartRecord = await db
       .select()
-      .from(cart)
-      .where(eq(cart.guestId, guestData.id))
+      .from(carts)
+      .where(eq(carts.guestId, guestData.id))
       .limit(1);
 
     if (guestCartRecord.length > 0) {
       const guestCart = guestCartRecord[0];
 
       // Get all items from the guest cart
-      const guestCartItems = await db
+      const guestCartItemsList = await db
         .select()
-        .from(cartItem)
-        .where(eq(cartItem.cartId, guestCart.id));
+        .from(cartItems)
+        .where(eq(cartItems.cartId, guestCart.id));
 
-      if (guestCartItems.length > 0) {
+      if (guestCartItemsList.length > 0) {
         // Find or create the user's cart
-        let userCartRecord = await db
+        const userCartRecord = await db
           .select()
-          .from(cart)
-          .where(eq(cart.userId, userId))
+          .from(carts)
+          .where(eq(carts.userId, userId))
           .limit(1);
 
         let userCart;
         if (userCartRecord.length === 0) {
           // Create a new cart for the user
-          const [newCart] = await db.insert(cart).values({
+          const [newCart] = await db.insert(carts).values({
             userId,
           }).returning();
           userCart = newCart;
@@ -273,43 +273,43 @@ export async function mergeGuestCartWithUserCart(userId: string): Promise<Action
         }
 
         // Get existing user cart items to check for duplicates
-        const userCartItems = await db
+        const userCartItemsList = await db
           .select()
-          .from(cartItem)
-          .where(eq(cartItem.cartId, userCart.id));
+          .from(cartItems)
+          .where(eq(cartItems.cartId, userCart.id));
 
         const userCartItemMap = new Map(
-          userCartItems.map(item => [item.productId, item])
+          userCartItemsList.map(item => [item.productVariantId, item])
         );
 
         // Merge guest cart items into user cart
-        for (const guestItem of guestCartItems) {
-          const existingUserItem = userCartItemMap.get(guestItem.productId);
+        for (const guestItem of guestCartItemsList) {
+          const existingUserItem = userCartItemMap.get(guestItem.productVariantId);
 
           if (existingUserItem) {
             // Product already exists in user's cart - add quantities
             await db
-              .update(cartItem)
+              .update(cartItems)
               .set({
                 quantity: existingUserItem.quantity + guestItem.quantity,
                 updatedAt: new Date(),
               })
-              .where(eq(cartItem.id, existingUserItem.id));
+              .where(eq(cartItems.id, existingUserItem.id));
           } else {
             // Product doesn't exist in user's cart - move the item
             await db
-              .update(cartItem)
+              .update(cartItems)
               .set({
                 cartId: userCart.id,
                 updatedAt: new Date(),
               })
-              .where(eq(cartItem.id, guestItem.id));
+              .where(eq(cartItems.id, guestItem.id));
           }
         }
 
         // Delete the guest cart (remaining items that were duplicates)
-        await db.delete(cartItem).where(eq(cartItem.cartId, guestCart.id));
-        await db.delete(cart).where(eq(cart.id, guestCart.id));
+        await db.delete(cartItems).where(eq(cartItems.cartId, guestCart.id));
+        await db.delete(carts).where(eq(carts.id, guestCart.id));
       }
     }
 

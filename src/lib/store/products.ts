@@ -9,8 +9,8 @@ interface ProductsState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   addProduct: (product: Product) => void;
-  updateProduct: (id: number, updates: Partial<Product>) => void;
-  removeProduct: (id: number) => void;
+  updateProduct: (id: string, updates: Partial<Product>) => void;
+  removeProduct: (id: string) => void;
 }
 
 export const useProductsStore = create<ProductsState>((set) => ({
