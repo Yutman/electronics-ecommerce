@@ -1,11 +1,26 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { products } from '@/lib/db/schema';
+import { getAllProducts } from '@/lib/actions/product';
+import { parseFilterParams } from '@/lib/utils/query';
+import type { NextRequest } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const allProducts = await db.select().from(products);
-    return NextResponse.json(allProducts);
+    const { searchParams } = request.nextUrl;
+    const params: Record<string, string | string[]> = {};
+    searchParams.forEach((value, key) => {
+      const existing = params[key];
+      if (existing) {
+        params[key] = Array.isArray(existing)
+          ? [...existing, value]
+          : [existing, value];
+      } else {
+        params[key] = value;
+      }
+    });
+
+    const filters = parseFilterParams(params);
+    const result = await getAllProducts(filters);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(
