@@ -94,8 +94,6 @@ function ProductGrid({ products }: { products: ProductListItem[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {products.map((product) => {
-        const { minPrice, maxPrice } = product;
-
         const badge =
           product.conditionSlug === "new"
             ? "New"
@@ -110,8 +108,8 @@ function ProductGrid({ products }: { products: ProductListItem[] }) {
             title={product.name}
             description={product.description ?? undefined}
             image={product.images[0] ?? "/placeholder.png"}
-            price={minPrice}
-            originalPrice={product.hasSale ? maxPrice : undefined}
+            price={product.price}
+            originalPrice={product.originalPrice ?? undefined}
             badge={badge}
             category={product.categoryName}
             brand={product.brandName}

@@ -52,8 +52,8 @@ export interface ProductListItem {
   brandSlug: string;
   conditionLabel: string;
   conditionSlug: string;
-  minPrice: number;
-  maxPrice: number;
+  price: number;
+  originalPrice: number | null;
   hasSale: boolean;
   images: string[];
 }
@@ -82,28 +82,52 @@ function variantExists(
   );
 }
 
-/** Scalar sub-query: effective (lowest) price for a product's variants. */
-const minPriceSql = sql<number>`(
-  SELECT MIN(COALESCE(pv.sale_price, pv.price)::numeric)
+/**
+ * Scalar sub-query: effective price from the cheapest variant.
+ * Returns the lowest COALESCE(sale_price, price) across all variants.
+ */
+const cheapestPriceSql = sql<number>`(
+  SELECT COALESCE(pv.sale_price, pv.price)::numeric
   FROM product_variants pv
   WHERE pv.product_id = ${products.id}
+  ORDER BY COALESCE(pv.sale_price, pv.price)::numeric ASC
+  LIMIT 1
 )`;
 
-/** Scalar sub-query: maximum listed price for a product's variants. */
-const maxPriceSql = sql<number>`(
-  SELECT MAX(pv.price::numeric)
+/**
+ * Scalar sub-query: original (list) price from the same cheapest variant.
+ * If that variant is on sale, returns its list price; otherwise NULL.
+ */
+const originalPriceSql = sql<number | null>`(
+  SELECT CASE
+    WHEN pv.sale_price IS NOT NULL AND pv.sale_price::numeric < pv.price::numeric
+    THEN pv.price::numeric
+    ELSE NULL
+  END
   FROM product_variants pv
   WHERE pv.product_id = ${products.id}
+  ORDER BY COALESCE(pv.sale_price, pv.price)::numeric ASC
+  LIMIT 1
 )`;
 
-/** Scalar sub-query: true when at least one variant has an active sale price. */
+/** Scalar sub-query: true when the cheapest variant is actually on sale. */
 const hasSaleSql = sql<boolean>`(
-  SELECT EXISTS(
-    SELECT 1 FROM product_variants pv
-    WHERE pv.product_id = ${products.id}
-      AND pv.sale_price IS NOT NULL
-      AND pv.sale_price::numeric < pv.price::numeric
-  )
+  SELECT CASE
+    WHEN pv.sale_price IS NOT NULL AND pv.sale_price::numeric < pv.price::numeric
+    THEN true
+    ELSE false
+  END
+  FROM product_variants pv
+  WHERE pv.product_id = ${products.id}
+  ORDER BY COALESCE(pv.sale_price, pv.price)::numeric ASC
+  LIMIT 1
+)`;
+
+/** Scalar sub-query: average review rating for a product. */
+const avgRatingSql = sql<number | null>`(
+  SELECT AVG(r.rating)::numeric
+  FROM reviews r
+  WHERE r.product_id = ${products.id}
 )`;
 
 // ---------------------------------------------------------------------------
@@ -266,11 +290,11 @@ function buildWhereConditions(q: ProductQueryObject): SQL[] {
   // -- Price range (scalar sub-query) -----------------------------------------
 
   if (q.priceMin !== undefined) {
-    conds.push(sql`${minPriceSql} >= ${q.priceMin}`);
+    conds.push(sql`${cheapestPriceSql} >= ${q.priceMin}`);
   }
 
   if (q.priceMax !== undefined) {
-    conds.push(sql`${minPriceSql} <= ${q.priceMax}`);
+    conds.push(sql`${cheapestPriceSql} <= ${q.priceMax}`);
   }
 
   return conds;
@@ -294,13 +318,13 @@ export async function getAllProducts(
   let orderByExpr: SQL;
   switch (sortBy) {
     case 'price_asc':
-      orderByExpr = asc(minPriceSql);
+      orderByExpr = asc(cheapestPriceSql);
       break;
     case 'price_desc':
-      orderByExpr = desc(minPriceSql);
+      orderByExpr = desc(cheapestPriceSql);
       break;
     case 'featured':
-      orderByExpr = desc(products.createdAt);
+      orderByExpr = sql`${avgRatingSql} DESC NULLS LAST`;
       break;
     case 'newest':
     default:
@@ -335,8 +359,8 @@ export async function getAllProducts(
         brandSlug: brands.slug,
         conditionLabel: conditions.label,
         conditionSlug: conditions.slug,
-        minPrice: minPriceSql,
-        maxPrice: maxPriceSql,
+        price: cheapestPriceSql,
+        originalPrice: originalPriceSql,
         hasSale: hasSaleSql,
       })
       .from(products)
@@ -423,8 +447,8 @@ export async function getAllProducts(
     brandSlug: row.brandSlug,
     conditionLabel: row.conditionLabel,
     conditionSlug: row.conditionSlug,
-    minPrice: Number(row.minPrice) || 0,
-    maxPrice: Number(row.maxPrice) || 0,
+    price: Number(row.price) || 0,
+    originalPrice: row.originalPrice != null ? Number(row.originalPrice) : null,
     hasSale: Boolean(row.hasSale),
     images: imagesByProduct.get(row.id) ?? [],
   }));
