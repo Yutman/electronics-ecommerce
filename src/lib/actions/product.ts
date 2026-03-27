@@ -54,6 +54,7 @@ export interface ProductListItem {
   conditionSlug: string;
   minPrice: number;
   maxPrice: number;
+  hasSale: boolean;
   images: string[];
 }
 
@@ -95,6 +96,16 @@ const maxPriceSql = sql<number>`(
   WHERE pv.product_id = ${products.id}
 )`;
 
+/** Scalar sub-query: true when at least one variant has an active sale price. */
+const hasSaleSql = sql<boolean>`(
+  SELECT EXISTS(
+    SELECT 1 FROM product_variants pv
+    WHERE pv.product_id = ${products.id}
+      AND pv.sale_price IS NOT NULL
+      AND pv.sale_price::numeric < pv.price::numeric
+  )
+)`;
+
 // ---------------------------------------------------------------------------
 // buildWhereConditions
 // ---------------------------------------------------------------------------
@@ -104,7 +115,8 @@ function buildWhereConditions(q: ProductQueryObject): SQL[] {
 
   // Full-text search (ILIKE on name & description)
   if (q.search) {
-    const term = `%${q.search}%`;
+    const escaped = q.search.replace(/[%_\\]/g, '\\$&');
+    const term = `%${escaped}%`;
     conds.push(
       or(ilike(products.name, term), ilike(products.description, term))!,
     );
@@ -325,6 +337,7 @@ export async function getAllProducts(
         conditionSlug: conditions.slug,
         minPrice: minPriceSql,
         maxPrice: maxPriceSql,
+        hasSale: hasSaleSql,
       })
       .from(products)
       .innerJoin(categories, eq(products.categoryId, categories.id))
@@ -412,6 +425,7 @@ export async function getAllProducts(
     conditionSlug: row.conditionSlug,
     minPrice: Number(row.minPrice) || 0,
     maxPrice: Number(row.maxPrice) || 0,
+    hasSale: Boolean(row.hasSale),
     images: imagesByProduct.get(row.id) ?? [],
   }));
 

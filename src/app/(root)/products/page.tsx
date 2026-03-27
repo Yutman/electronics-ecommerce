@@ -99,7 +99,7 @@ function ProductGrid({ products }: { products: ProductListItem[] }) {
         const badge =
           product.conditionSlug === "new"
             ? "New"
-            : maxPrice > minPrice
+            : product.hasSale
               ? "Sale"
               : undefined;
 
@@ -111,7 +111,7 @@ function ProductGrid({ products }: { products: ProductListItem[] }) {
             description={product.description ?? undefined}
             image={product.images[0] ?? "/placeholder.png"}
             price={minPrice}
-            originalPrice={maxPrice > minPrice ? maxPrice : undefined}
+            originalPrice={product.hasSale ? maxPrice : undefined}
             badge={badge}
             category={product.categoryName}
             brand={product.brandName}

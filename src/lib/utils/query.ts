@@ -304,6 +304,6 @@ export function buildProductQueryObject(filters: ProductFilters): ProductQueryOb
     priceMax: filters.priceMax,
     sortBy: filters.sort ?? 'newest',
     page: filters.page ?? 1,
-    limit: filters.limit ?? DEFAULT_PAGE_SIZE,
+    limit: Math.min(Math.max(filters.limit ?? DEFAULT_PAGE_SIZE, 1), 100),
   };
 }
