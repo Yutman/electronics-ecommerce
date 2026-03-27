@@ -22,7 +22,6 @@ interface VariantSelectorProps {
   cpuOptions: VariantOption[];
   storageOptions: VariantOption[];
   ramOptions: VariantOption[];
-  onPriceChange?: (price: number, savings: number) => void;
 }
 
 export default function VariantSelector({
@@ -32,7 +31,6 @@ export default function VariantSelector({
   cpuOptions,
   storageOptions,
   ramOptions,
-  onPriceChange,
 }: VariantSelectorProps) {
   const [selectedCondition, setSelectedCondition] = useState(conditions[1]?.id ?? conditions[0]?.id ?? "");
   const [selectedCpu, setSelectedCpu] = useState(cpuOptions[0]?.id ?? "");
@@ -46,10 +44,6 @@ export default function VariantSelector({
 
   const currentPrice = basePrice + conditionDiff + cpuDiff + storageDiff + ramDiff;
   const savings = originalPrice - currentPrice;
-
-  if (onPriceChange) {
-    onPriceChange(currentPrice, savings);
-  }
 
   return (
     <div className="space-y-6">
@@ -120,7 +114,7 @@ export default function VariantSelector({
               <span className="text-footnote text-dark-500 mt-0.5">{condition.description}</span>
               {condition.priceDiff !== 0 && (
                 <span className={`text-footnote mt-1 ${condition.priceDiff > 0 ? "text-red" : "text-green"}`}>
-                  {condition.priceDiff > 0 ? "+" : ""}${condition.priceDiff.toFixed(2)}
+                  {condition.priceDiff > 0 ? "+" : "-"}${Math.abs(condition.priceDiff).toFixed(2)}
                 </span>
               )}
             </button>
