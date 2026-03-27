@@ -16,6 +16,7 @@ import {
   faceSizes,
   series,
 } from './filters';
+import { productImages } from './product_images';
 
 export const productVariants = pgTable('product_variants', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -41,11 +42,12 @@ export const productVariants = pgTable('product_variants', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export const productVariantsRelations = relations(productVariants, ({ one }) => ({
+export const productVariantsRelations = relations(productVariants, ({ one, many }) => ({
   product: one(products, {
     fields: [productVariants.productId],
     references: [products.id],
   }),
+  images: many(productImages),
   cpu: one(cpus, {
     fields: [productVariants.cpuId],
     references: [cpus.id],
@@ -91,6 +93,7 @@ export const productVariantsRelations = relations(productVariants, ({ one }) => 
     references: [series.id],
   }),
 }));
+
 
 const dimensionsSchema = z.object({
   length: z.number().positive(),

@@ -3,6 +3,7 @@ import queryString from 'query-string';
 export type SortOption = 'featured' | 'newest' | 'price_asc' | 'price_desc';
 
 export interface ProductFilters {
+  search?: string;
   category?: string;
   brands?: string[];
   conditions?: string[];
@@ -21,6 +22,7 @@ export interface ProductFilters {
   priceMax?: number;
   sort?: SortOption;
   page?: number;
+  limit?: number;
 }
 
 export function parseQueryParams(searchParams: Record<string, string | string[] | undefined>): ProductFilters {
@@ -43,6 +45,7 @@ export function parseQueryParams(searchParams: Record<string, string | string[] 
   };
 
   return {
+    search: typeof searchParams.search === 'string' ? searchParams.search : undefined,
     category: typeof searchParams.category === 'string' ? searchParams.category : undefined,
     brands: parseArray(searchParams.brands),
     conditions: parseArray(searchParams.conditions),
@@ -61,6 +64,7 @@ export function parseQueryParams(searchParams: Record<string, string | string[] 
     priceMax: parseNumber(searchParams.price_max),
     sort: parseSort(searchParams.sort),
     page: parseNumber(searchParams.page) || 1,
+    limit: parseNumber(searchParams.limit) || undefined,
   };
 }
 
@@ -187,4 +191,119 @@ export function getActiveFilterCount(filters: ProductFilters): number {
 export function buildProductsUrl(filters: ProductFilters): string {
   const queryStr = stringifyFilters(filters);
   return queryStr ? `/products?${queryStr}` : '/products';
+}
+
+// ---------------------------------------------------------------------------
+// Server-side helpers: parseFilterParams & buildProductQueryObject
+// ---------------------------------------------------------------------------
+
+/** Alias for parseQueryParams — maps raw URL search params to a ProductFilters object. */
+export function parseFilterParams(
+  searchParams: Record<string, string | string[] | undefined>,
+): ProductFilters {
+  return parseQueryParams(searchParams);
+}
+
+// -- Slug-to-value parsers for filter tables that lack a slug column ----------
+
+/** Parse RAM slugs like '8gb' → 8 (sizeGb). */
+export function parseRamSlugs(slugs: string[]): number[] {
+  return slugs
+    .map((s) => {
+      const m = s.match(/^(\d+)gb$/i);
+      return m ? parseInt(m[1], 10) : NaN;
+    })
+    .filter((n) => !isNaN(n));
+}
+
+/** Parse storage slugs like '256gb' → 256, '1tb' → 1024 (capacityGb). */
+export function parseStorageSlugs(slugs: string[]): number[] {
+  return slugs
+    .map((s) => {
+      const m = s.match(/^(\d+)(gb|tb)$/i);
+      if (!m) return NaN;
+      const val = parseInt(m[1], 10);
+      return m[2].toLowerCase() === 'tb' ? val * 1024 : val;
+    })
+    .filter((n) => !isNaN(n));
+}
+
+/** Parse screen-size slugs like '14', '15.6' (kept as numeric strings for sizeInches). */
+export function parseScreenSizeSlugs(slugs: string[]): string[] {
+  return slugs.filter((s) => /^\d+(\.\d+)?$/.test(s));
+}
+
+/** Parse band / face size slugs like '38mm' → 38 (sizeMm). */
+export function parseSizeMmSlugs(slugs: string[]): number[] {
+  return slugs
+    .map((s) => {
+      const m = s.match(/^(\d+)mm$/i);
+      return m ? parseInt(m[1], 10) : NaN;
+    })
+    .filter((n) => !isNaN(n));
+}
+
+/** Map sim-slot slugs to their DB enum values ('esim' → 'eSIM'). */
+export function parseSimSlotSlugs(slugs: string[]): string[] {
+  const map: Record<string, string> = { single: 'single', dual: 'dual', esim: 'eSIM' };
+  return slugs.map((s) => map[s.toLowerCase()] ?? s).filter(Boolean);
+}
+
+// -- buildProductQueryObject --------------------------------------------------
+
+/** Structured, DB-agnostic representation of the product query. */
+export interface ProductQueryObject {
+  isPublished: true;
+  search?: string;
+  categorySlug?: string;
+  brandSlugs?: string[];
+  conditionSlugs?: string[];
+  cpuSlugs?: string[];
+  ramSizeGbs?: number[];
+  storageCapacityGbs?: number[];
+  screenSizeValues?: string[];
+  colorSlugs?: string[];
+  simSlotTypes?: string[];
+  connectivitySlugs?: string[];
+  bandSizeMms?: number[];
+  bandTypeSlugs?: string[];
+  faceSizeMms?: number[];
+  seriesSlugs?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  sortBy: SortOption;
+  page: number;
+  limit: number;
+}
+
+const DEFAULT_PAGE_SIZE = 12;
+
+/**
+ * Converts a ProductFilters object into a structured query object that can be
+ * consumed by the server action to build Drizzle SQL conditions.
+ */
+export function buildProductQueryObject(filters: ProductFilters): ProductQueryObject {
+  return {
+    isPublished: true,
+    search: filters.search?.trim() || undefined,
+    categorySlug: filters.category || undefined,
+    brandSlugs: filters.brands?.length ? filters.brands : undefined,
+    conditionSlugs: filters.conditions?.length ? filters.conditions : undefined,
+    cpuSlugs: filters.cpus?.length ? filters.cpus : undefined,
+    ramSizeGbs: filters.rams?.length ? parseRamSlugs(filters.rams) : undefined,
+    storageCapacityGbs: filters.storages?.length ? parseStorageSlugs(filters.storages) : undefined,
+    screenSizeValues: filters.screenSizes?.length ? parseScreenSizeSlugs(filters.screenSizes) : undefined,
+    colorSlugs: filters.bandColors?.length ? filters.bandColors : undefined,
+    simSlotTypes: filters.simSlots?.length ? parseSimSlotSlugs(filters.simSlots) : undefined,
+    connectivitySlugs: filters.connectivities?.length ? filters.connectivities : undefined,
+    bandSizeMms: filters.bandSizes?.length ? parseSizeMmSlugs(filters.bandSizes) : undefined,
+    bandTypeSlugs: filters.bandTypes?.length ? filters.bandTypes : undefined,
+    faceSizeMms: filters.faceSizes?.length ? parseSizeMmSlugs(filters.faceSizes) : undefined,
+    seriesSlugs: filters.series?.length ? filters.series : undefined,
+    priceMin: filters.priceMin,
+    priceMax: filters.priceMax,
+    sortBy: filters.sort ?? 'newest',
+    page: filters.page ?? 1,
+    limit: Math.min(Math.max(filters.limit ?? DEFAULT_PAGE_SIZE, 1), 100),
+  };
 }

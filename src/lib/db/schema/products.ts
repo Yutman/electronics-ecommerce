@@ -4,6 +4,8 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { categories } from './categories';
 import { brands, conditions } from './filters';
+import { productVariants } from './variants';
+import { productImages } from './product_images';
 
 export const products = pgTable('products', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -19,7 +21,7 @@ export const products = pgTable('products', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export const productsRelations = relations(products, ({ one }) => ({
+export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, {
     fields: [products.categoryId],
     references: [categories.id],
@@ -32,6 +34,8 @@ export const productsRelations = relations(products, ({ one }) => ({
     fields: [products.conditionId],
     references: [conditions.id],
   }),
+  variants: many(productVariants),
+  images: many(productImages),
 }));
 
 export const insertProductSchema = createInsertSchema(products, {
