@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { Cpu, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductGallery from "@/components/ProductGallery";
 import VariantSelector from "@/components/VariantSelector";
 import SpecTable from "@/components/SpecTable";
-import TrustBadges from "@/components/TrustBadges";
 import ProductCarousel from "@/components/ProductCarousel";
 import {
   mockProduct,
@@ -149,8 +148,8 @@ export default async function ProductDetailPage({
 
           {/* Main Product Layout */}
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-            {/* Left Column: Gallery (60%) */}
-            <div className="w-full lg:w-[60%]">
+            {/* Left Column: Gallery (60%) - Sticky */}
+            <div className="w-full lg:w-[60%] lg:sticky lg:top-20 lg:h-fit">
               <ProductGallery images={product.images} />
             </div>
 
@@ -181,26 +180,6 @@ export default async function ProductDetailPage({
                 ramOptions={product.ramOptions}
               />
 
-              {/* Trust Badges */}
-              <div className="mt-6">
-                <TrustBadges
-                  shippingEstimate={product.shippingEstimate}
-                  warrantyInfo={product.warrantyInfo}
-                />
-              </div>
-
-              {/* About This Item */}
-              <div className="mt-6">
-                <h3 className="text-body-medium text-dark-900 mb-3">About this item</h3>
-                <ul className="space-y-2">
-                  {product.highlights.map((highlight) => (
-                    <li key={highlight} className="flex items-start gap-2 text-caption text-dark-700">
-                      <Cpu className="w-4 h-4 text-dark-500 shrink-0 mt-0.5" aria-hidden="true" />
-                      <span>{highlight}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
           </div>
 
